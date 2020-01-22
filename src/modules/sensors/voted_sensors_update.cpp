@@ -53,11 +53,12 @@ using namespace matrix;
 using namespace time_literals;
 using math::radians;
 
-VotedSensorsUpdate::VotedSensorsUpdate(const Parameters &parameters, bool hil_enabled,
+VotedSensorsUpdate::VotedSensorsUpdate(const Parameters &parameters, bool imu_selection, bool hil_enabled,
 				       uORB::SubscriptionCallbackWorkItem(&vehicle_imu_sub)[3]) :
 	ModuleParams(nullptr),
 	_vehicle_imu_sub(vehicle_imu_sub),
 	_parameters(parameters),
+	_imu_selection(imu_selection),
 	_hil_enabled(hil_enabled),
 	_mag_compensator(this)
 {
@@ -68,6 +69,8 @@ VotedSensorsUpdate::VotedSensorsUpdate(const Parameters &parameters, bool hil_en
 		_gyro.voter.set_timeout(500000);
 		_accel.voter.set_timeout(500000);
 	}
+
+	PX4_INFO("IMU selection: %d", _imu_selection);
 }
 
 int VotedSensorsUpdate::init(sensor_combined_s &raw)

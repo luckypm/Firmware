@@ -45,14 +45,26 @@ using math::constrain;
 namespace sensors
 {
 
-VehicleIMU::VehicleIMU(uint8_t accel_index, uint8_t gyro_index) :
+VehicleIMU::VehicleIMU(int instance, uint8_t accel_index, uint8_t gyro_index) :
 	ModuleParams(nullptr),
-	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::navigation_and_controllers),
+	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::INS0),
 	_sensor_accel_sub(this, ORB_ID(sensor_accel), accel_index),
 	_sensor_gyro_sub(this, ORB_ID(sensor_gyro), gyro_index),
 	_accel_corrections(this, SensorCorrections::SensorType::Accelerometer),
 	_gyro_corrections(this, SensorCorrections::SensorType::Gyroscope)
 {
+	PX4_INFO("starting %d accel: %d gyro: %d", instance, accel_index, gyro_index);
+
+	if (instance == 0) {
+		ChangeWorkQeue(px4::wq_configurations::INS0);
+
+	} else if (instance == 1) {
+		ChangeWorkQeue(px4::wq_configurations::INS1);
+
+	} else if (instance == 2) {
+		ChangeWorkQeue(px4::wq_configurations::INS2);
+	}
+
 	const float configured_interval_us = 1e6f / _param_imu_integ_rate.get();
 
 	_accel_integrator.set_reset_interval(configured_interval_us);
