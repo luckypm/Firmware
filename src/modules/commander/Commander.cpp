@@ -2009,6 +2009,9 @@ Commander::run()
 					mavlink_log_emergency(&mavlink_log_pub, "Manual kill-switch engaged");
 					_status_changed = true;
 					armed.manual_lockdown = true;
+					// by pengl
+					PX4_INFO("reboot now");
+					px4_reboot_request(false, 400_ms);
 				}
 
 			} else if (_sp_man.kill_switch == manual_control_setpoint_s::SWITCH_POS_OFF) {
