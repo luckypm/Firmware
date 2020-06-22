@@ -30,7 +30,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
-
+//
 #include <uORB/Subscription.hpp>
 
 #include "ADC.hpp"
