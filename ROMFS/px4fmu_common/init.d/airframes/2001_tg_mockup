@@ -58,6 +58,9 @@ then
 	param set SENS_TFMINI_CFG 104
 
 	param set SYS_USE_IO 0
+
+	# circuit breaker
+	param set CBRK_IO_SAFETY 22027
 fi
 
 
