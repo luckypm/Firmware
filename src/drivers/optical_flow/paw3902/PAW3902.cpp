@@ -133,8 +133,8 @@ PAW3902::changeMode(Mode newMode)
 	if (newMode != _mode) {
 		PX4_INFO("changing from mode %d -> %d", static_cast<int>(_mode), static_cast<int>(newMode));
 		ScheduleClear();
-		reset();
-
+		registerWrite(Register::Power_Up_Reset, 0x5A);// issue soft reset first
+		
 		switch (newMode) {
 		case Mode::Bright:
 			modeBright();
@@ -153,6 +153,7 @@ PAW3902::changeMode(Mode newMode)
 		}
 
 		_mode = newMode;
+		_skip_motion_counter = 3;
 	}
 	_bright_to_low_counter = 0;
 	_low_to_superlow_counter = 0;
@@ -279,6 +280,11 @@ PAW3902::modeBright()
 	usleep(10_ms); // delay 10ms
 
 	registerWrite(0x73, 0x00);
+	
+	// enable LED_N pulsing
+//	registerWrite(0x7F, 0x14);
+//	registerWrite(0x6F, 0x1C);
+//	registerWrite(0x7F, 0x00);
 
 	return false;
 }
@@ -396,6 +402,11 @@ PAW3902::modeLowLight()
 
 	registerWrite(0x73, 0x00);
 
+	// enable LED_N pulsing
+//	registerWrite(0x7F, 0x14);
+//	registerWrite(0x6F, 0x1C);
+//	registerWrite(0x7F, 0x00);
+
 	return false;
 }
 
@@ -512,6 +523,11 @@ PAW3902::modeSuperLowLight()
 
 	registerWrite(0x73, 0x00);
 
+	// enable LED_N pulsing
+//	registerWrite(0x7F, 0x14);
+//	registerWrite(0x6F, 0x1C);
+//	registerWrite(0x7F, 0x00);
+
 	return true;
 }
 
@@ -561,19 +577,13 @@ PAW3902::RunImpl()
 
 	// update for next iteration
 	_previous_collect_timestamp = timestamp_sample;
-
-	// PX4_INFO("data.Motion %d", buf.data.Motion);
-	// PX4_INFO("data.Observation %d", buf.data.Observation);
-	// PX4_INFO("data.Delta_X_L %d", buf.data.Delta_X_L);
-	// PX4_INFO("data.Delta_X_H %d", buf.data.Delta_X_H);
-	// PX4_INFO("data.Delta_Y_L %d", buf.data.Delta_Y_L);
-	// PX4_INFO("data.Delta_Y_H %d", buf.data.Delta_Y_H);
-	// PX4_INFO("data.SQUAL %d", buf.data.SQUAL);
-	// PX4_INFO("data.RawData_Sum %d", buf.data.RawData_Sum);
-	// PX4_INFO("data.Maximum_RawData %d", buf.data.Maximum_RawData);
-	// PX4_INFO("data.Minimum_RawData %d", buf.data.Minimum_RawData);
-	// PX4_INFO("data.Shutter_Upper %d", buf.data.Shutter_Upper);
-	// PX4_INFO("data.Shutter_Lower %d", buf.data.Shutter_Lower);
+	
+	//Skip the first three motion data when mode changed
+	if(_skip_motion_counter > 0){
+		_skip_motion_counter--;
+		perf_end(_sample_perf);
+		return;
+	}
 
 	const int16_t delta_x_raw = ((int16_t)buf.data.Delta_X_H << 8) | buf.data.Delta_X_L;
 	const int16_t delta_y_raw = ((int16_t)buf.data.Delta_Y_H << 8) | buf.data.Delta_Y_L;
@@ -585,14 +595,13 @@ PAW3902::RunImpl()
 	// Super Low Light Mode,	SQUAL < 0x55, Shutter ≥ 0x0BC0
 	const uint16_t shutter = (buf.data.Shutter_Upper << 8) | buf.data.Shutter_Lower;
 
-	if ((buf.data.SQUAL < 0x19) && (shutter >= 0x0BC0)) {
-		PX4_ERR("false motion report, discarding");
-		perf_end(_sample_perf);
-		return;
-	}
-
 	switch (_mode) {
 	case Mode::Bright:
+		if((buf.data.SQUAL < 0x19) && (shutter >= 0x1FF0)){
+			PX4_ERR("false motion report, discarding");
+			perf_end(_sample_perf);
+			return;
+		}
 		if ((shutter >= 0x1FFE) && (buf.data.RawData_Sum < 0x3C)) {
 			_bright_to_low_counter++;
 			if(_bright_to_low_counter >= 10){// AND valid for 10 consecutive frames
@@ -607,6 +616,11 @@ PAW3902::RunImpl()
 		break;
 
 	case Mode::LowLight:
+		if((buf.data.SQUAL < 0x46) && (shutter >= 0x1FF0)){
+			PX4_ERR("false motion report, discarding");
+			perf_end(_sample_perf);
+			return;
+		}
 		if ((shutter >= 0x1FFE) && (buf.data.RawData_Sum < 0x5A)) {
 			_low_to_bright_counter = 0;
 			_low_to_superlow_counter++;
@@ -627,7 +641,11 @@ PAW3902::RunImpl()
 		break;
 
 	case Mode::SuperLowLight:
-
+		if((buf.data.SQUAL < 0x55) && (shutter >= 0x0BC0)){
+			PX4_ERR("false motion report, discarding");
+			perf_end(_sample_perf);
+			return;
+		}
 		// SuperLowLight -> LowLight
 		if ((shutter < 0x03E8)) {
 			_superlow_to_low_counter++;
@@ -638,11 +656,6 @@ PAW3902::RunImpl()
 		else{
 			_superlow_to_low_counter = 0;
 		}
-
-		// PAW3902JF should not operate with Shutter < 0x01F4 in Mode 2
-		// if (shutter >= 0x01F4) {// it should be Shutter < 0x01F4, but there is no need to use it here , by Peng
-		// 	changeMode(Mode::LowLight);
-		// }
 
 		break;
 	}

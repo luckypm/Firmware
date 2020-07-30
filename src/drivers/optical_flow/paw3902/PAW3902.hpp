@@ -123,5 +123,6 @@ private:
 	uint8_t 	_low_to_superlow_counter{0};
 	uint8_t 	_low_to_bright_counter{0};
 	uint8_t 	_superlow_to_low_counter{0};
+	uint8_t 	_skip_motion_counter{0};
 
 };
