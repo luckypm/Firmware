@@ -679,8 +679,8 @@ PAW3902::RunImpl()
 
 	//PX4_INFO("X: %d Y: %d", _flow_sum_x, _flow_sum_y);
 
-	report.pixel_flow_x_integral = (float)_flow_sum_x / 500.0f;	// proportional factor + convert from pixels to radians
-	report.pixel_flow_y_integral = (float)_flow_sum_y / 500.0f;	// proportional factor + convert from pixels to radians
+	report.pixel_flow_x_integral = (float)_flow_sum_x / 469.0f;	// proportional factor + convert from pixels to radians
+	report.pixel_flow_y_integral = (float)_flow_sum_y / 469.0f;	// proportional factor + convert from pixels to radians
 
 	// rotate measurements in yaw from sensor frame to body frame according to parameter SENS_FLOW_ROT
 	float zeroval = 0.0f;
