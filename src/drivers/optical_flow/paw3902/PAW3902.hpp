@@ -52,7 +52,14 @@
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_range_finder.h>
 #include <uORB/PublicationMulti.hpp>
+#include <uORB/Subscription.hpp>
 #include <uORB/topics/optical_flow.h>
+#include <uORB/topics/debug_vect.h>
+#include <uORB/topics/distance_sensor.h>
+#include <uORB/topics/input_rc.h>
+
+
+
 
 /* Configuration Constants */
 
@@ -102,6 +109,9 @@ private:
 	bool changeMode(Mode newMode);
 
 	uORB::PublicationMulti<optical_flow_s> _optical_flow_pub{ORB_ID(optical_flow)};
+	uORB::Publication<debug_vect_s> _debug_vect_pub{ORB_ID(debug_vect)};
+	uORB::Subscription _distance_sensor_sub{ORB_ID(distance_sensor)};
+	uORB::Subscription _rc_sub{ORB_ID(input_rc)};
 
 	perf_counter_t	_sample_perf;
 	perf_counter_t	_comms_errors;
@@ -124,5 +134,9 @@ private:
 	uint8_t 	_low_to_bright_counter{0};
 	uint8_t 	_superlow_to_low_counter{0};
 	uint8_t 	_skip_motion_counter{0};
+	float 		_sum_x{0};
+	float       _sum_y{0};
+	float       _distance_z{0};
+	uint16_t 	_rc_channal7{0};
 
 };

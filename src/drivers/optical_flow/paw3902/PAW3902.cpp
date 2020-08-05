@@ -685,7 +685,34 @@ PAW3902::RunImpl()
 	// rotate measurements in yaw from sensor frame to body frame according to parameter SENS_FLOW_ROT
 	float zeroval = 0.0f;
 	rotate_3f(_yaw_rotation, report.pixel_flow_x_integral, report.pixel_flow_y_integral, zeroval);
+	
+	distance_sensor_s dist_sensor;
+	if (_distance_sensor_sub.update(&dist_sensor)) {
+		_distance_z = dist_sensor.current_distance;
+	}
+	
+	
+	_sum_x += report.pixel_flow_x_integral * _distance_z;
+	_sum_y += report.pixel_flow_y_integral * _distance_z;
 
+	input_rc_s rc;
+	if (_rc_sub.update(&rc)) {
+		_rc_channal7 = (rc.channel_count > 6) ? rc.values[6] : UINT16_MAX;
+	}
+	if(_rc_channal7 > 1300){
+		_sum_x = _sum_y = 0;
+	}
+
+	
+	debug_vect_s dbg_vect{};
+	strncpy(dbg_vect.name, "sum_xyz", 10);
+	dbg_vect.timestamp = hrt_absolute_time();
+	dbg_vect.x = _sum_x;
+	dbg_vect.y = _sum_y;
+	dbg_vect.z = _distance_z;
+	_debug_vect_pub.publish(dbg_vect);
+
+	
 	report.frame_count_since_last_readout = _frame_count_since_last;
 	report.integration_timespan = _flow_dt_sum_usec;	// microseconds
 
