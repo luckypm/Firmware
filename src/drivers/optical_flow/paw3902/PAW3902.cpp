@@ -598,7 +598,7 @@ PAW3902::RunImpl()
 	switch (_mode) {
 	case Mode::Bright:
 		if((buf.data.SQUAL < 0x19) && (shutter >= 0x1FF0)){
-			PX4_ERR("false motion report, discarding");
+			//PX4_ERR("false motion report, discarding");
 			perf_end(_sample_perf);
 			return;
 		}
@@ -617,7 +617,7 @@ PAW3902::RunImpl()
 
 	case Mode::LowLight:
 		if((buf.data.SQUAL < 0x46) && (shutter >= 0x1FF0)){
-			PX4_ERR("false motion report, discarding");
+			//PX4_ERR("false motion report, discarding");
 			perf_end(_sample_perf);
 			return;
 		}
@@ -642,7 +642,7 @@ PAW3902::RunImpl()
 
 	case Mode::SuperLowLight:
 		if((buf.data.SQUAL < 0x55) && (shutter >= 0x0BC0)){
-			PX4_ERR("false motion report, discarding");
+			//PX4_ERR("false motion report, discarding");
 			perf_end(_sample_perf);
 			return;
 		}
